@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PS3 Compatibility Checker</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<style>
+body { font-family: Arial; padding: 20px; }
+select, button { margin: 5px 0; padding: 5px; }
+.result { margin-top: 20px; }
+</style>
+</head>
+<body>
+<h1>PS3 Compatibility Checker</h1>
+
+<label>Series:</label>
+<select id="seriesSelect"><option value="">Select Series</option></select>
+
+<label>Subseries:</label>
+<select id="subseriesSelect"><option value="">Select Subseries</option></select>
+
+<label>Model:</label>
+<select id="modelSelect"><option value="">Select Model</option></select>
+
+<button id="verifyBtn">Verify</button>
+
+<div class="result">
+<p>CFW: <span id="cfw">-</span></p>
+<p>CEX: <span id="cex">-</span></p>
+<p>DEX: <span id="dex">-</span></p>
+</div>
+
+<script>
+const seriesSelect = document.getElementById("seriesSelect");
+const subseriesSelect = document.getElementById("subseriesSelect");
+const modelSelect = document.getElementById("modelSelect");
+const cfw = document.getElementById("cfw");
+const cex = document.getElementById("cex");
+const dex = document.getElementById("dex");
+
+const seriesList = {{ series|tojson }};
+seriesList.forEach(s => seriesSelect.add(new Option(s,s)));
+
+seriesSelect.onchange = async () => {
+    subseriesSelect.innerHTML = '<option value="">Select Subseries</option>';
+    modelSelect.innerHTML = '<option value="">Select Model</option>';
+    if (!seriesSelect.value) return;
+    const res = await fetch('/get_subseries', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({series: seriesSelect.value})
+    });
+    const data = await res.json();
+    data.forEach(sub => subseriesSelect.add(new Option(sub, sub)));
+};
+
+subseriesSelect.onchange = async () => {
+    modelSelect.innerHTML = '<option value="">Select Model</option>';
+    if (!subseriesSelect.value) return;
+    const res = await fetch('/get_models', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({subseries: subseriesSelect.value})
+    });
+    const data = await res.json();
+    data.forEach(m => modelSelect.add(new Option(m, m)));
+};
+
+document.getElementById("verifyBtn").onclick = async () => {
+    if (!modelSelect.value) return;
+    const res = await fetch('/check', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model: modelSelect.value})
+    });
+    const data = await res.json();
+    cfw.textContent = data.cfw;
+    cex.textContent = data.cex;
+    dex.textContent = data.dex;
+};
+</script>
+</body>
+</html>
